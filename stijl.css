@@ -1,0 +1,12 @@
+:root{--bg:#0b0f1a;--paneel:#121827;--tekst:#e6e9f2;--zacht:#9aa3b8;--accent:#22d3ee;--lijn:#232b3f}
+@media (prefers-color-scheme: light){:root{--bg:#f6f7fb;--paneel:#ffffff;--tekst:#141826;--zacht:#566078;--accent:#0e7490;--lijn:#e1e5ee}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tekst);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:48px 16px 64px}
+h1{font-size:28px;line-height:1.25;margin:0 0 8px}
+h2{font-size:19px;margin:32px 0 8px}
+p,li{color:var(--tekst)} .zacht{color:var(--zacht)}
+a{color:var(--accent)}
+.kaart{background:var(--paneel);border:1px solid var(--lijn);border-radius:12px;padding:20px 22px;margin-top:24px}
+nav{display:flex;gap:16px;margin-bottom:32px;font-size:14px}
+footer{margin-top:48px;font-size:13px;color:var(--zacht)}
