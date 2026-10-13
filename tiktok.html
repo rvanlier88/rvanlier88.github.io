@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>TikTok koppelen · Vizion Onvideo</title>
+<link rel="stylesheet" href="stijl.css">
+</head>
+<body>
+<main>
+<nav><a href="index.html">Home</a><a href="privacy.html">Privacy policy</a><a href="terms.html">Terms of service</a></nav>
+<h1>TikTok koppelen</h1>
+<p class="zacht" lang="en">Return page for connecting a TikTok account to Vizion Onvideo.</p>
+<div class="kaart" id="uit"><p>Even geduld…</p></div>
+</main>
+<script>
+/* TikTok stuurt na het inloggen hierheen met ?code=…&state=… (of ?error=…). De state is
+   <nonce>.<base64url van het dashboard-adres>: daarheen gaat de code, in de #, zodat hij niet in een
+   serverlog van het dashboard komt. Zonder dashboard-adres (koppelen vanaf de opdrachtregel) staat de
+   code hier met het commando om hem in te wisselen. De code is maar kort geldig en zonder het geheim op
+   de server waardeloos. */
+(function () {
+  var q = new URLSearchParams(location.search);
+  var code = q.get('code'), state = q.get('state') || '';
+  var fout = q.get('error_description') || q.get('error');
+  var uit = document.getElementById('uit');
+
+  function tekst(t) { var e = document.createElement('span'); e.textContent = t; return e.innerHTML; }
+
+  function terugadres(st) {
+    var deel = st.split('.')[1];
+    if (!deel) return null;
+    try {
+      var b = deel.replace(/-/g, '+').replace(/_/g, '/');
+      var u = new URL(atob(b + '='.repeat((4 - b.length % 4) % 4)));
+      if ((u.protocol !== 'http:' && u.protocol !== 'https:') || u.pathname !== '/' || u.search || u.hash || u.username || u.password) return null;
+      return u.origin;
+    } catch (e) { return null; }
+  }
+
+  /* alleen vanzelf door naar een dashboard op een eigen adres (deze computer, Tailscale, thuisnetwerk); anders
+     zou deze pagina iedereen naar elke willekeurige site kunnen doorsturen */
+  function eigen(origin) {
+    var h = new URL(origin).hostname.replace(/^\[|\]$/g, '');
+    if (h === 'localhost' || h === '::1' || /\.ts\.net$/.test(h) || /^fd[0-9a-f]{2}:/i.test(h)) return true;
+    var d = h.split('.').map(Number);
+    if (d.length !== 4 || d.some(function (x) { return !(x >= 0 && x <= 255); })) return false;
+    return d[0] === 127 || d[0] === 10 || (d[0] === 100 && d[1] >= 64 && d[1] <= 127)
+      || (d[0] === 172 && d[1] >= 16 && d[1] <= 31) || (d[0] === 192 && d[1] === 168);
+  }
+  var adres = terugadres(state);
+  if (!code) {
+    var reden = fout || 'TikTok gaf geen code terug';
+    uit.innerHTML = '<p class="fout"><strong>Koppelen is niet gelukt:</strong> ' + tekst(reden) + '</p>'
+      + '<p>Probeer het opnieuw met TIKTOK KOPPELEN in het dashboard (MUZIEK). Klikte je op Annuleren, dan is er niets veranderd.</p>'
+      + (adres ? '<p><a class="knop" href="' + tekst(adres + '/#tiktok-fout=' + encodeURIComponent(reden)) + '">Terug naar het dashboard</a></p>' : '');
+    return;
+  }
+
+  var doel = adres ? adres + '/#tiktok-code=' + encodeURIComponent(code) + '&tiktok-state=' + encodeURIComponent(state) : null;
+  var commando = "onvideo tiktok-auth --code='" + code.replace(/'/g, "'\\''") + "' --state='" + state.replace(/'/g, "'\\''") + "'";
+  var reserve = (doel ? '<p>Kom je niet in het dashboard (bijvoorbeeld op je telefoon zonder Tailscale)? Draai dan binnen een paar minuten op de server:</p>'
+                      : '<p>Draai binnen een paar minuten op de server:</p>')
+    + '<span class="code" id="cmd">' + tekst(commando) + '</span>'
+    + '<button class="knop zacht" id="kopieer" type="button">Kopieer het commando</button>';
+  uit.innerHTML = doel
+    ? '<p><strong>TikTok heeft toestemming gegeven.</strong> Je gaat terug naar je dashboard, dat de koppeling afmaakt.</p>'
+      + '<p><a class="knop" href="' + tekst(doel) + '">Terug naar het dashboard</a> <span class="zacht">' + tekst(adres) + '</span></p>' + reserve
+    : '<p><strong>TikTok heeft toestemming gegeven.</strong> Nu nog de koppeling afmaken.</p>' + reserve;
+  document.getElementById('kopieer').onclick = function () {
+    var knop = this;
+    function klaar() { knop.textContent = 'Gekopieerd'; }
+    if (navigator.clipboard) navigator.clipboard.writeText(commando).then(klaar, function () {});
+  };
+  // één keer vanzelf door; lukt dat niet en kom je met Terug weer hier, dan blijft de pagina staan
+  var sleutel = 'tiktok-door-' + state;
+  var vanzelf = doel && eigen(adres);
+  try { if (vanzelf && !sessionStorage.getItem(sleutel)) { sessionStorage.setItem(sleutel, '1'); location.href = doel; } }
+  catch (e) { if (vanzelf) location.href = doel; }
+})();
+</script>
+</body>
+</html>
